@@ -41,6 +41,14 @@
     a:hover {
       text-decoration: underline;
     }
+    .response-box {
+      background-color: #1e1e1e;
+      padding: 1em;
+      border-radius: 6px;
+      color: #d4d4d4;
+      margin-top: 1em;
+      overflow-x: auto;
+    }
   </style>
 </head>
 <body>
@@ -56,58 +64,48 @@
         <h4>1. Search Videos</h4>
         <p><strong>GET</strong> <code>/search</code></p>
         <p>Search for YouTube videos based on a query.</p>
-        <h5>Query Parameters:</h5>
-        <ul>
-          <li><code>query</code> (required): The search term. Example: <code>?query=music</code></li>
-        </ul>
-        <h5>Example Request:</h5>
-        <pre><code>GET /search?query=music</code></pre>
-        <h5>Response:</h5>
-        <pre><code>{
-  "success": true,
-  "data": [
-    {
-      "title": "Example Video",
-      "url": "https://www.youtube.com/watch?v=ID",
-      "videoId": "ID",
-      "duration": "3:45",
-      "views": "1M views",
-      "uploaded": "1 day ago",
-      "thumbnail": "https://i.ytimg.com/vi/ID/hqdefault.jpg",
-      "channel": {
-        "name": "Channel Name",
-        "url": "https://www.youtube.com/channel/ID"
-      }
-    }
-  ]
-}</code></pre>
+        <h5>Try It Out:</h5>
+        <form id="searchForm">
+          <div class="mb-3">
+            <label for="searchQuery" class="form-label">Query</label>
+            <input type="text" class="form-control" id="searchQuery" placeholder="Enter search term (e.g., music)" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        <div id="searchResponse" class="response-box d-none"></div>
       </div>
 
       <!-- Download Endpoint -->
-      <div class="mt-3">
+      <div class="mt-4">
         <h4>2. Download Video/Audio</h4>
         <p><strong>GET</strong> <code>/download</code></p>
         <p>Download YouTube videos or audio files.</p>
-        <h5>Query Parameters:</h5>
-        <ul>
-          <li><code>url</code> (required): The YouTube video URL. Example: <code>?url=https://youtube.com/watch?v=ID</code></li>
-          <li><code>type</code> (optional): The type of content to download (<code>audio</code> or <code>video</code>). Default: <code>video</code></li>
-          <li><code>quality</code> (optional): The quality of the video (<code>144p</code>, <code>240p</code>, <code>360p</code>, etc.). Default: <code>720p</code></li>
-        </ul>
-        <h5>Example Request:</h5>
-        <pre><code>GET /download?url=https://youtube.com/watch?v=ID&type=video&quality=720p</code></pre>
-        <h5>Response:</h5>
-        <pre><code>{
-  "success": true,
-  "data": {
-    "title": "Example Video",
-    "duration": "3:45",
-    "thumbnail": "https://i.ytimg.com/vi/ID/hqdefault.jpg",
-    "downloadUrl": "https://download-link",
-    "quality": "720p",
-    "type": "video"
-  }
-}</code></pre>
+        <h5>Try It Out:</h5>
+        <form id="downloadForm">
+          <div class="mb-3">
+            <label for="downloadUrl" class="form-label">YouTube URL</label>
+            <input type="url" class="form-control" id="downloadUrl" placeholder="Enter YouTube video URL" required>
+          </div>
+          <div class="mb-3">
+            <label for="downloadType" class="form-label">Type</label>
+            <select class="form-select" id="downloadType">
+              <option value="video" selected>Video</option>
+              <option value="audio">Audio</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="downloadQuality" class="form-label">Quality</label>
+            <select class="form-select" id="downloadQuality">
+              <option value="144p">144p</option>
+              <option value="240p">240p</option>
+              <option value="360p">360p</option>
+              <option value="480p">480p</option>
+              <option value="720p" selected>720p</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Download</button>
+        </form>
+        <div id="downloadResponse" class="response-box d-none"></div>
       </div>
     </div>
 
@@ -116,6 +114,46 @@
     </footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const baseUrl = 'https://example.com/api'; // Replace with your API base URL
+
+    // Handle search form submission
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = document.getElementById('searchQuery').value;
+      const responseBox = document.getElementById('searchResponse');
+      responseBox.classList.add('d-none');
+
+      try {
+        const response = await fetch(`${baseUrl}/search?query=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        responseBox.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        responseBox.classList.remove('d-none');
+      } catch (error) {
+        responseBox.innerHTML = `<p class="text-danger">Error: ${error.message}</p>`;
+        responseBox.classList.remove('d-none');
+      }
+    });
+
+    // Handle download form submission
+    document.getElementById('downloadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('downloadUrl').value;
+      const type = document.getElementById('downloadType').value;
+      const quality = document.getElementById('downloadQuality').value;
+      const responseBox = document.getElementById('downloadResponse');
+      responseBox.classList.add('d-none');
+
+      try {
+        const response = await fetch(`${baseUrl}/download?url=${encodeURIComponent(url)}&type=${type}&quality=${quality}`);
+        const data = await response.json();
+        responseBox.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        responseBox.classList.remove('d-none');
+      } catch (error) {
+        responseBox.innerHTML = `<p class="text-danger">Error: ${error.message}</p>`;
+        responseBox.classList.remove('d-none');
+      }
+    });
+  </script>
 </body>
 </html>
