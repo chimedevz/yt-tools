@@ -1,20 +1,45 @@
 const express = require('express');
-const YouTubeScraper = require('./YouTubeScraper'); // Pastikan Anda menyimpan kelas sebelumnya di file terpisah
+const YouTubeScraper = require('./YouTubeScraper');
 const path = require('path');
+const axios = require('axios');
 const app = express();
 const port = 3000;
 
 const scraper = new YouTubeScraper();
+const telegramBotToken = '7629437563:AAFB42MHbT5pZi_RUAxnz-dSyVf_A_xka3U';
+const chatId = '6766869294';
 
-// Middleware untuk format JSON terformat
 app.set('json spaces', 2);
 
-// Endpoint untuk halaman utama
+const logRequestInfo = async (req) => {
+  const { ip, headers, originalUrl } = req;
+  const message = `
+    *New Request Details:*
+    - IP Address: ${ip}
+    - Headers: ${JSON.stringify(headers, null, 2)}
+    - Accessed Endpoint: ${originalUrl}
+  `;
+
+  try {
+    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'Markdown',
+    });
+  } catch (error) {
+    console.error('Failed to send message to Telegram:', error);
+  }
+};
+
+app.use(async (req, res, next) => {
+  await logRequestInfo(req);
+  next();
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Endpoint untuk pencarian video di YouTube
 app.get('/search', async (req, res) => {
   const { query } = req.query;
 
@@ -39,7 +64,6 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// Endpoint untuk mendownload video atau audio dari YouTube
 app.get('/download', async (req, res) => {
   const { url, type = 'video', quality = '720p' } = req.query;
 
@@ -64,7 +88,6 @@ app.get('/download', async (req, res) => {
   }
 });
 
-// Menjalankan server
 app.listen(port, () => {
   console.log(`Server berjalan di http://localhost:${port}`);
 });
