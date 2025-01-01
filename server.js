@@ -2,6 +2,7 @@ const express = require('express');
 const YouTubeScraper = require('./YouTubeScraper');
 const path = require('path');
 const axios = require('axios');
+const { Telegraf } = require('telegraf');
 const app = express();
 const port = 3000;
 
@@ -9,7 +10,13 @@ const scraper = new YouTubeScraper();
 const telegramBotToken = '7629437563:AAFB42MHbT5pZi_RUAxnz-dSyVf_A_xka3U';
 const chatId = '6766869294';
 
-app.set('json spaces', 2);
+const bot = new Telegraf(telegramBotToken);
+
+const escapeMarkdownV2 = (text) => {
+  return text
+    .replace(/([_\*[\]()~`>#+\-=|{}.!])/g, '\\$1')  // Escape markdown special characters
+    .replace(/\n/g, '\\n');  // Escape newlines
+};
 
 const logRequestInfo = async (req) => {
   const { ip, headers, originalUrl } = req;
@@ -21,15 +28,15 @@ const logRequestInfo = async (req) => {
   `;
 
   try {
-    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      chat_id: chatId,
-      text: message,
-      parse_mode: 'Markdown',
-    });
+    const escapedMessage = escapeMarkdownV2(message);  // Escape special characters
+    await bot.telegram.sendMessage(chatId, escapedMessage, { parse_mode: 'MarkdownV2' });
   } catch (error) {
     console.error('Failed to send message to Telegram:', error);
   }
 };
+
+app.set('json spaces', 2);
+
 
 app.use(async (req, res, next) => {
   await logRequestInfo(req);
