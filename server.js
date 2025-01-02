@@ -37,6 +37,32 @@ const logRequestInfo = async (req) => {
 
 app.set('json spaces', 2);
 
+app.use((req, res, next) => {
+    res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>404 Not Found</title>
+        </head>
+        <body>
+            <h1>404 - Page Not Found</h1>
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '746cd569f32ff23d003963fda21a7e40',
+                    'format' : 'iframe',
+                    'height' : 300,
+                    'width' : 160,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="//www.highperformanceformat.com/746cd569f32ff23d003963fda21a7e40/invoke.js"></script>
+        </body>
+        </html>
+    `);
+});
+
 
 app.use(async (req, res, next) => {
   await logRequestInfo(req);
