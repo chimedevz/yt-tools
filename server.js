@@ -1,126 +1,106 @@
 const express = require('express');
 const YouTubeScraper = require('./YouTubeScraper');
 const path = require('path');
-const axios = require('axios');
 const { Telegraf } = require('telegraf');
+const rateLimit = require('express-rate-limit');
+const compression = require('compression');
+
 const app = express();
 const port = 3000;
 
+// Hardcoded Telegram credentials
+const TELEGRAM_BOT_TOKEN = '7629437563:AAFB42MHbT5pZi_RUAxnz-dSyVf_A_xka3U';
+const TELEGRAM_CHAT_ID = '6766869294';
+
+// Initialize scraper and Telegram bot
 const scraper = new YouTubeScraper();
-const telegramBotToken = '7629437563:AAFB42MHbT5pZi_RUAxnz-dSyVf_A_xka3U';
-const chatId = '6766869294';
+const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 
-const bot = new Telegraf(telegramBotToken);
-
-const escapeMarkdownV2 = (text) => {
-  return text
-    .replace(/([_\*[\]()~`>#+\-=|{}.!])/g, '\\$1')  // Escape markdown special characters
-    .replace(/\n/g, '\\n');  // Escape newlines
-};
-
-const logRequestInfo = async (req) => {
+// Middleware to log request info to Telegram
+const logRequestInfo = async (req, res, next) => {
   const { ip, headers, originalUrl } = req;
   const message = `
-    *New Request Details:*
-    - IP Address: ${ip}
-    - Headers: ${JSON.stringify(headers, null, 2)}
-    - Accessed Endpoint: ${originalUrl}
+*New Request:*
+- IP: ${ip}
+- Endpoint: ${originalUrl}
+- Headers: ${JSON.stringify(headers, null, 2)}
   `;
 
   try {
-    const escapedMessage = escapeMarkdownV2(message);  // Escape special characters
-    await bot.telegram.sendMessage(chatId, escapedMessage, { parse_mode: 'MarkdownV2' });
-  } catch (error) {
-    console.error('Failed to send message to Telegram:', error);
+    await bot.telegram.sendMessage(TELEGRAM_CHAT_ID, message, { parse_mode: 'MarkdownV2' });
+  } catch (err) {
+    console.error('Error sending message to Telegram:', err);
   }
+  next();
 };
 
-app.set('json spaces', 2);
+// Middleware
+app.use(compression());
+app.use(express.json());
+app.use(logRequestInfo);
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
-app.use((req, res, next) => {
-    res.status(404).send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>404 Not Found</title>
-        </head>
-        <body>
-            <h1>404 - Page Not Found</h1>
-            <script type="text/javascript">
-                atOptions = {
-                    'key' : '746cd569f32ff23d003963fda21a7e40',
-                    'format' : 'iframe',
-                    'height' : 300,
-                    'width' : 160,
-                    'params' : {}
-                };
-            </script>
-            <script type="text/javascript" src="//www.highperformanceformat.com/746cd569f32ff23d003963fda21a7e40/invoke.js"></script>
-        </body>
-        </html>
-    `);
-});
-
-
-app.use(async (req, res, next) => {
-  await logRequestInfo(req);
-  next();
-});
-
+// Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/search', async (req, res) => {
   const { query } = req.query;
-
   if (!query) {
-    return res.status(400).json({
-      success: false,
-      message: 'Query parameter diperlukan. Contoh: ?query=lagu',
-    });
+    return res.status(400).json({ success: false, message: 'Query parameter is required.' });
   }
 
   try {
-    const result = await scraper.search(query);
-    res.json({
-      success: true,
-      data: result,
-    });
+    const results = await scraper.search(query);
+    res.json({ success: true, data: results });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
 app.get('/download', async (req, res) => {
   const { url, type = 'video', quality = '720p' } = req.query;
-
   if (!url) {
-    return res.status(400).json({
-      success: false,
-      message: 'URL parameter diperlukan. Contoh: ?url=https://youtube.com/watch?v=ID_VIDEO',
-    });
+    return res.status(400).json({ success: false, message: 'URL parameter is required.' });
   }
 
   try {
-    const result = await scraper.download(url, { type, quality });
-    res.json({
-      success: true,
-      data: result,
-    });
+    const results = await scraper.download(url, { type, quality });
+    res.json({ success: true, data: results });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
+// 404 Page
+app.use((req, res) => {
+  res.status(404).send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>404 Not Found</title>
+    </head>
+    <body>
+      <h1>404 - Page Not Found</h1>
+      <script type="text/javascript">
+        atOptions = {
+          'key': '746cd569f32ff23d003963fda21a7e40',
+          'format': 'iframe',
+          'height': 300,
+          'width': 160,
+          'params': {}
+        };
+      </script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/746cd569f32ff23d003963fda21a7e40/invoke.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+// Start Server
 app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
