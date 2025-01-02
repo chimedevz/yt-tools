@@ -35,6 +35,7 @@
     <div class="flex justify-center space-x-4 border-b border-gray-700 pb-4">
       <button id="tab-search" class="px-4 py-2 text-gray-200 bg-gray-800 rounded hover:bg-gray-700 active:bg-purple-500">Cari Video</button>
       <button id="tab-download" class="px-4 py-2 text-gray-200 bg-gray-800 rounded hover:bg-gray-700 active:bg-purple-500">Unduh Video/Audio</button>
+      <button id="tab-docs" class="px-4 py-2 text-gray-200 bg-gray-800 rounded hover:bg-gray-700 active:bg-purple-500">Dokumentasi</button>
     </div>
 
     <!-- Konten Tab -->
@@ -82,6 +83,51 @@
         <pre class="whitespace-pre-wrap text-sm"></pre>
       </div>
     </section>
+
+    <section id="content-docs" class="mt-8 fade-in hidden">
+      <h2 class="text-2xl font-semibold text-purple-400">Dokumentasi API</h2>
+      <p class="mt-2">Panduan lengkap cara menggunakan API dengan cURL dan Node.js.</p>
+
+      <h3 class="mt-6 text-xl font-semibold text-gray-300">1. Endpoint Cari Video</h3>
+      <p>Gunakan endpoint ini untuk mencari video YouTube berdasarkan kata kunci.</p>
+      <pre class="mt-4 bg-gray-800 p-4 rounded text-sm">
+Endpoint: GET /search
+Query Parameter:
+- query (string, required): Kata kunci pencarian.
+
+Contoh cURL:
+curl -X GET 'https://cryptzx.us.kg/search?query=musik'
+
+Contoh Node.js:
+const fetch = require('node-fetch');
+(async () => {
+  const response = await fetch('https://cryptzx.us.kg/search?query=musik');
+  const data = await response.json();
+  console.log(data);
+})();
+      </pre>
+
+      <h3 class="mt-6 text-xl font-semibold text-gray-300">2. Endpoint Unduh Video/Audio</h3>
+      <p>Gunakan endpoint ini untuk mengunduh video atau audio dari YouTube.</p>
+      <pre class="mt-4 bg-gray-800 p-4 rounded text-sm">
+Endpoint: GET /download
+Query Parameters:
+- url (string, required): URL video YouTube.
+- type (string, optional): Jenis file (video atau audio). Default: video.
+- quality (string, optional): Kualitas video. Default: 720p.
+
+Contoh cURL:
+curl -X GET 'https://cryptzx.us.kg/download?url=https://youtube.com/watch?v=ID&type=video&quality=720p'
+
+Contoh Node.js:
+const fetch = require('node-fetch');
+(async () => {
+  const response = await fetch('https://cryptzx.us.kg/download?url=https://youtube.com/watch?v=ID&type=video&quality=720p');
+  const data = await response.json();
+  console.log(data);
+})();
+      </pre>
+    </section>
   </main>
 
   <!-- Footer -->
@@ -95,18 +141,28 @@
 
     const tabSearch = document.getElementById('tab-search');
     const tabDownload = document.getElementById('tab-download');
+    const tabDocs = document.getElementById('tab-docs');
     const contentSearch = document.getElementById('content-search');
     const contentDownload = document.getElementById('content-download');
+    const contentDocs = document.getElementById('content-docs');
 
     // Tab Navigasi
     tabSearch.addEventListener('click', () => {
       contentSearch.classList.remove('hidden');
       contentDownload.classList.add('hidden');
+      contentDocs.classList.add('hidden');
     });
 
     tabDownload.addEventListener('click', () => {
       contentSearch.classList.add('hidden');
       contentDownload.classList.remove('hidden');
+      contentDocs.classList.add('hidden');
+    });
+
+    tabDocs.addEventListener('click', () => {
+      contentSearch.classList.add('hidden');
+      contentDownload.classList.add('hidden');
+      contentDocs.classList.remove('hidden');
     });
 
     // Cari Video
